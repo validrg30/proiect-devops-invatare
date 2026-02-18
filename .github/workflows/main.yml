@@ -7,7 +7,24 @@ on:
 
 # 2. Ce să facă? (Jobs)
 jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install flask
+      - name: Run Tests
+        run: python test_app.py
+
   build-and-push:
+
+    needs: test  # <--- ASTA E CHEIA! Nu incepe fara ca 'test' sa fie verde.
     runs-on: ubuntu-latest  # GitHub ne împrumută un server Ubuntu
 
     steps:
