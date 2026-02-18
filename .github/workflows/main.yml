@@ -1,49 +1,80 @@
-name: CI/CD Pipeline Docker
+name: CI/CD Pipeline Avansat
 
-# 1. Când să ruleze? (Trigger)
+# 1. Trigger: Când pornește?
+# Pornește la orice push pe 'main' sau pe 'develop'
+# ȘI pornește când pui un tag nou de git (ex: v1.0)
 on:
   push:
-    branches: [ "main" ]
+    branches: 
+      - main
+      - develop
+    tags:
+      - 'v*'
 
-# 2. Ce să facă? (Jobs)
 jobs:
-
+  # Job 1: Testarea Automată
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: Descarcă Codul
+        uses: actions/checkout@v4
+
+      - name: Pregătește Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-      - name: Install dependencies
-        run: |
-          pip install flask
-      - name: Run Tests
+
+      - name: Instalează Dependințe
+        run: pip install flask
+
+      - name: Rulează Testele
         run: python test_app.py
 
+  # Job 2: Build și Push (rulează DOAR dacă testele au trecut)
   build-and-push:
-
-    needs: test  # <--- ASTA E CHEIA! Nu incepe fara ca 'test' sa fie verde.
-    runs-on: ubuntu-latest  # GitHub ne împrumută un server Ubuntu
+    needs: test  # Așteaptă verde de la test
+    runs-on: ubuntu-latest
+    
+    # Definim permisiuni pentru a citi repo-ul
+    permissions:
+      contents: read
+      packages: write
 
     steps:
-      # Pasul A: Descarcă codul tău pe serverul GitHub
-      - name: Checkout code
+      - name: Descarcă Codul
         uses: actions/checkout@v4
 
-      # Pasul B: Se loghează în Docker Hub (folosind secretele)
+      # Logare în Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # Pasul C: Construiește și urcă imaginea
+      # Pasul MAGIC: Generarea Tag-urilor
+      # Aici Docker decide ce nume va avea imaginea
+      - name: Docker Meta (Generare Tag-uri)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # Inlocuieste cu imaginea ta reala!
+          images: valentin3005/proiect-devops-invatare
+          tags: |
+            # Regula 1: Daca suntem pe branch-ul 'main', pune tag 'latest'
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            
+            # Regula 2: Daca suntem pe branch-ul 'develop', pune tag 'beta'
+            type=raw,value=beta,enable=${{ github.ref == 'refs/heads/develop' }}
+            
+            # Regula 3: Daca este un tag de Git (ex: v1.0), pune tag-ul respectiv
+            type=ref,event=tag
+
+      # Construcția și Upload-ul
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          # Aici folosim variabila speciala pentru a pune tag-ul 'latest'
-          tags: ${{ secrets.DOCKER_USERNAME }}/proiect-devops-invatare:latest
+          # Folosim tag-urile generate automat mai sus
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
