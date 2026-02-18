@@ -69,6 +69,10 @@ jobs:
             # Regula 3: Daca este un tag de Git (ex: v1.0), pune tag-ul respectiv
             type=ref,event=tag
 
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag  # <--- Asta preia automat git tag (ex: v1.0)
+
+
       # Construcția și Upload-ul
       - name: Build and Push
         uses: docker/build-push-action@v5
