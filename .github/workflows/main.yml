@@ -60,17 +60,9 @@ jobs:
           # Inlocuieste cu imaginea ta reala!
           images: valentin3005/proiect-devops-invatare
           tags: |
-            # Regula 1: Daca suntem pe branch-ul 'main', pune tag 'latest'
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            
-            # Regula 2: Daca suntem pe branch-ul 'develop', pune tag 'beta'
             type=raw,value=beta,enable=${{ github.ref == 'refs/heads/develop' }}
-            
-            # Regula 3: Daca este un tag de Git (ex: v1.0), pune tag-ul respectiv
             type=ref,event=tag
-
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=ref,event=tag  # <--- Asta preia automat git tag (ex: v1.0)
 
 
       # Construcția și Upload-ul
